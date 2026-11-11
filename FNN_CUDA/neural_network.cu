@@ -11,7 +11,7 @@
 //
 //
 //**************************************************************************
-#include "neural_netowrk.cuh"
+#include "neural_network.cuh"
 #define BLOCK_SIZE 16
 
 void forward_propagation(Neural_Network nn)
@@ -28,7 +28,7 @@ void forward_propagation(Neural_Network nn)
 
 void backward_propagation(Neural_Network nn, float* t)
 {
-    cudaFuncSetCacheConfig(forward, cudaFuncCachePrferL1);
+    cudaFuncSetCacheConfig(forward, cudaFuncCachePreferL1);
 }                           
 
 __global__ void forward(float* w, float* b, float* z)
