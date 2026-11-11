@@ -38,21 +38,37 @@ __global__ void forward(float* w, float* b, float* z)
     cudaMalloc(&y, sizeof(z));
     cudaMalloc(&wt, sizeof(w));
     
+    /* 
+    Call relu_activate kernel
+    
+    int n = nn.batch_size * nn.layer_sizes[i + 1];
+
+    int threads = 256;
+    int blocks = (n + threads - 1) / threads;
+
+    relu_activate<<<blocks, threads>>>(y, z, n);
+    
+    */
 
     
 }	
 
-__global__ void relu_activate(float* y, float* z)
+__global__ void relu_activate(float* y, float* z, int n)
 {
+    unsigned int idx = blockIdx.x * blockDim.x + threadIdx.x; // 
 
-}	
+    if (idx < n) // RELU function check
+    {
+        y[idx] = (z[idx] > 0.0f) ? z[idx] : 0.0f;
+    }
+}
 
 __global__ void loss(float* e, float* z, float* t)
 {
 
 }	
 
-__global__ void backward(float* x, float* t, float *l)
+__global__ void backward(float* x, float* t, float *l) // activation function derivative
 {
 
 }				        
