@@ -1,0 +1,175 @@
+Unoptimized
+
+MNIST, block size = 8, loop unroll enabled
+Epoch 1/5  loss 2.0618  test accuracy 0.7867  train time 228.3 ms
+Epoch 2/5  loss 1.9630  test accuracy 0.9022  train time 218.7 ms
+Epoch 3/5  loss 1.9458  test accuracy 0.9138  train time 215.0 ms
+Epoch 4/5  loss 1.9379  test accuracy 0.9208  train time 217.8 ms
+Epoch 5/5  loss 1.9323  test accuracy 0.9246  train time 214.6 ms
+
+MNIST, block size = 8, loop unroll disabled
+Epoch 1/5  loss 2.0618  test accuracy 0.7867  train time 347.3 ms
+Epoch 2/5  loss 1.9630  test accuracy 0.9022  train time 338.0 ms
+Epoch 3/5  loss 1.9458  test accuracy 0.9138  train time 341.3 ms
+Epoch 4/5  loss 1.9379  test accuracy 0.9208  train time 337.9 ms
+Epoch 5/5  loss 1.9323  test accuracy 0.9246  train time 338.1 ms
+
+MNIST, block size = 16, loop unroll enabled
+Epoch 1/5  loss 2.0618  test accuracy 0.7867  train time 217.3 ms
+Epoch 2/5  loss 1.9630  test accuracy 0.9022  train time 210.0 ms
+Epoch 3/5  loss 1.9458  test accuracy 0.9138  train time 206.5 ms
+Epoch 4/5  loss 1.9379  test accuracy 0.9208  train time 209.9 ms
+Epoch 5/5  loss 1.9323  test accuracy 0.9246  train time 206.8 ms
+
+MNIST, block size = 16, loop unroll disabled
+Epoch 1/5  loss 2.0618  test accuracy 0.7867  train time 347.0 ms
+Epoch 2/5  loss 1.9630  test accuracy 0.9022  train time 330.6 ms
+Epoch 3/5  loss 1.9458  test accuracy 0.9138  train time 334.6 ms
+Epoch 4/5  loss 1.9379  test accuracy 0.9208  train time 331.1 ms
+Epoch 5/5  loss 1.9323  test accuracy 0.9246  train time 330.6 ms
+
+MNIST, block size = 32, loop unroll enabled
+Epoch 1/5  loss 2.0618  test accuracy 0.7867  train time 240.8 ms
+Epoch 2/5  loss 1.9630  test accuracy 0.9022  train time 232.4 ms
+Epoch 3/5  loss 1.9458  test accuracy 0.9138  train time 229.7 ms
+Epoch 4/5  loss 1.9379  test accuracy 0.9208  train time 233.2 ms
+Epoch 5/5  loss 1.9323  test accuracy 0.9246  train time 230.3 ms
+
+MNIST, block size = 32, loop unroll disabled
+Epoch 1/5  loss 2.0618  test accuracy 0.7867  train time 368.0 ms
+Epoch 2/5  loss 1.9630  test accuracy 0.9022  train time 358.9 ms
+Epoch 3/5  loss 1.9458  test accuracy 0.9138  train time 361.8 ms
+Epoch 4/5  loss 1.9379  test accuracy 0.9208  train time 361.3 ms
+Epoch 5/5  loss 1.9323  test accuracy 0.9246  train time 359.4 ms
+
+CIFAR-10, block size = 8, loop unroll enabled
+Epoch 1/20  loss 1.9265  test accuracy 0.3776  train time 2719.9 ms
+Epoch 2/20  loss 1.7505  test accuracy 0.4113  train time 2710.3 ms
+Epoch 3/20  loss 1.6759  test accuracy 0.4257  train time 2723.5 ms
+Epoch 4/20  loss 1.6257  test accuracy 0.4325  train time 2700.7 ms
+Epoch 5/20  loss 1.5869  test accuracy 0.4384  train time 2706.9 ms
+Epoch 6/20  loss 1.5550  test accuracy 0.4402  train time 2706.3 ms
+Epoch 7/20  loss 1.5271  test accuracy 0.4490  train time 2706.3 ms
+Epoch 8/20  loss 1.5024  test accuracy 0.4558  train time 2703.4 ms
+Epoch 9/20  loss 1.4805  test accuracy 0.4615  train time 2706.3 ms
+Epoch 10/20  loss 1.4603  test accuracy 0.4634  train time 2707.0 ms
+Epoch 11/20  loss 1.4414  test accuracy 0.4683  train time 2707.1 ms
+Epoch 12/20  loss 1.4243  test accuracy 0.4728  train time 2702.8 ms
+Epoch 13/20  loss 1.4085  test accuracy 0.4758  train time 2707.1 ms
+Epoch 14/20  loss 1.3937  test accuracy 0.4776  train time 2706.7 ms
+Epoch 15/20  loss 1.3793  test accuracy 0.4834  train time 2705.5 ms
+Epoch 16/20  loss 1.3655  test accuracy 0.4876  train time 2703.8 ms
+Epoch 17/20  loss 1.3528  test accuracy 0.4885  train time 2707.2 ms
+Epoch 18/20  loss 1.3402  test accuracy 0.4922  train time 2705.7 ms
+Epoch 19/20  loss 1.3289  test accuracy 0.4942  train time 2721.8 ms
+Epoch 20/20  loss 1.3170  test accuracy 0.4979  train time 2703.4 ms
+
+CIFAR-10, block size = 8, loop unroll disabled
+Epoch 1/20  loss 1.9265  test accuracy 0.3776  train time 7170.6 ms
+Epoch 2/20  loss 1.7505  test accuracy 0.4113  train time 7140.1 ms
+Epoch 3/20  loss 1.6759  test accuracy 0.4257  train time 7164.8 ms
+Epoch 4/20  loss 1.6257  test accuracy 0.4325  train time 7145.7 ms
+Epoch 5/20  loss 1.5869  test accuracy 0.4384  train time 7163.3 ms
+Epoch 6/20  loss 1.5550  test accuracy 0.4402  train time 7147.4 ms
+Epoch 7/20  loss 1.5271  test accuracy 0.4490  train time 7169.2 ms
+Epoch 8/20  loss 1.5024  test accuracy 0.4558  train time 7146.4 ms
+Epoch 9/20  loss 1.4805  test accuracy 0.4615  train time 7165.7 ms
+Epoch 10/20  loss 1.4603  test accuracy 0.4634  train time 7146.0 ms
+Epoch 11/20  loss 1.4414  test accuracy 0.4683  train time 7172.5 ms
+Epoch 12/20  loss 1.4243  test accuracy 0.4728  train time 7143.6 ms
+Epoch 13/20  loss 1.4085  test accuracy 0.4758  train time 7163.3 ms
+Epoch 14/20  loss 1.3937  test accuracy 0.4776  train time 7145.0 ms
+Epoch 15/20  loss 1.3793  test accuracy 0.4834  train time 7162.7 ms
+Epoch 16/20  loss 1.3655  test accuracy 0.4876  train time 7144.9 ms
+Epoch 17/20  loss 1.3528  test accuracy 0.4885  train time 7164.3 ms
+Epoch 18/20  loss 1.3402  test accuracy 0.4922  train time 7155.2 ms
+Epoch 19/20  loss 1.3289  test accuracy 0.4942  train time 7164.1 ms
+Epoch 20/20  loss 1.3170  test accuracy 0.4979  train time 7145.1 ms
+
+CIFAR-10, block size = 16, loop unroll enabled
+Epoch 1/20  loss 1.9265  test accuracy 0.3776  train time 2050.3 ms
+Epoch 2/20  loss 1.7505  test accuracy 0.4113  train time 2044.4 ms
+Epoch 3/20  loss 1.6759  test accuracy 0.4257  train time 2044.3 ms
+Epoch 4/20  loss 1.6257  test accuracy 0.4325  train time 2047.5 ms
+Epoch 5/20  loss 1.5869  test accuracy 0.4384  train time 2040.8 ms
+Epoch 6/20  loss 1.5550  test accuracy 0.4402  train time 2044.4 ms
+Epoch 7/20  loss 1.5271  test accuracy 0.4490  train time 2049.3 ms
+Epoch 8/20  loss 1.5024  test accuracy 0.4558  train time 2047.3 ms
+Epoch 9/20  loss 1.4805  test accuracy 0.4615  train time 2044.8 ms
+Epoch 10/20  loss 1.4603  test accuracy 0.4634  train time 2043.9 ms
+Epoch 11/20  loss 1.4414  test accuracy 0.4683  train time 2045.1 ms
+Epoch 12/20  loss 1.4243  test accuracy 0.4728  train time 2048.2 ms
+Epoch 13/20  loss 1.4085  test accuracy 0.4758  train time 2047.3 ms
+Epoch 14/20  loss 1.3937  test accuracy 0.4776  train time 2044.1 ms
+Epoch 15/20  loss 1.3793  test accuracy 0.4834  train time 2044.4 ms
+Epoch 16/20  loss 1.3655  test accuracy 0.4876  train time 2044.2 ms
+Epoch 17/20  loss 1.3528  test accuracy 0.4885  train time 2047.2 ms
+Epoch 18/20  loss 1.3402  test accuracy 0.4922  train time 2043.9 ms
+Epoch 19/20  loss 1.3289  test accuracy 0.4942  train time 2044.4 ms
+Epoch 20/20  loss 1.3170  test accuracy 0.4979  train time 2044.4 ms
+
+CIFAR-10, block size = 16, loop unroll disabled
+Epoch 1/20  loss 1.9265  test accuracy 0.3776  train time 5481.6 ms
+Epoch 2/20  loss 1.7505  test accuracy 0.4113  train time 5472.1 ms
+Epoch 3/20  loss 1.6759  test accuracy 0.4257  train time 5478.2 ms
+Epoch 4/20  loss 1.6257  test accuracy 0.4325  train time 5476.1 ms
+Epoch 5/20  loss 1.5869  test accuracy 0.4384  train time 5478.0 ms
+Epoch 6/20  loss 1.5550  test accuracy 0.4402  train time 5474.5 ms
+Epoch 7/20  loss 1.5271  test accuracy 0.4490  train time 5478.4 ms
+Epoch 8/20  loss 1.5024  test accuracy 0.4558  train time 5475.8 ms
+Epoch 9/20  loss 1.4805  test accuracy 0.4615  train time 5478.0 ms
+Epoch 10/20  loss 1.4603  test accuracy 0.4634  train time 5489.0 ms
+Epoch 11/20  loss 1.4414  test accuracy 0.4683  train time 5477.8 ms
+Epoch 12/20  loss 1.4243  test accuracy 0.4728  train time 5475.5 ms
+Epoch 13/20  loss 1.4085  test accuracy 0.4758  train time 5478.9 ms
+Epoch 14/20  loss 1.3937  test accuracy 0.4776  train time 5476.9 ms
+Epoch 15/20  loss 1.3793  test accuracy 0.4834  train time 5479.5 ms
+Epoch 16/20  loss 1.3655  test accuracy 0.4876  train time 5473.0 ms
+Epoch 17/20  loss 1.3528  test accuracy 0.4885  train time 5478.5 ms
+Epoch 18/20  loss 1.3402  test accuracy 0.4922  train time 5475.8 ms
+Epoch 19/20  loss 1.3289  test accuracy 0.4942  train time 5490.2 ms
+Epoch 20/20  loss 1.3170  test accuracy 0.4979  train time 5473.5 ms
+
+CIFAR-10, block size = 32, loop unroll enabled
+Epoch 1/20  loss 1.9265  test accuracy 0.3776  train time 2587.1 ms
+Epoch 2/20  loss 1.7505  test accuracy 0.4113  train time 2584.1 ms
+Epoch 3/20  loss 1.6759  test accuracy 0.4257  train time 2584.6 ms
+Epoch 4/20  loss 1.6257  test accuracy 0.4325  train time 2581.5 ms
+Epoch 5/20  loss 1.5869  test accuracy 0.4384  train time 2596.3 ms
+Epoch 6/20  loss 1.5550  test accuracy 0.4402  train time 2586.6 ms
+Epoch 7/20  loss 1.5271  test accuracy 0.4490  train time 2586.1 ms
+Epoch 8/20  loss 1.5024  test accuracy 0.4558  train time 2584.3 ms
+Epoch 9/20  loss 1.4805  test accuracy 0.4615  train time 2584.2 ms
+Epoch 10/20  loss 1.4603  test accuracy 0.4634  train time 2587.1 ms
+Epoch 11/20  loss 1.4414  test accuracy 0.4683  train time 2584.2 ms
+Epoch 12/20  loss 1.4243  test accuracy 0.4728  train time 2583.8 ms
+Epoch 13/20  loss 1.4085  test accuracy 0.4758  train time 2583.3 ms
+Epoch 14/20  loss 1.3937  test accuracy 0.4776  train time 2589.1 ms
+Epoch 15/20  loss 1.3793  test accuracy 0.4834  train time 2584.1 ms
+Epoch 16/20  loss 1.3655  test accuracy 0.4876  train time 2584.9 ms
+Epoch 17/20  loss 1.3528  test accuracy 0.4885  train time 2584.2 ms
+Epoch 18/20  loss 1.3402  test accuracy 0.4922  train time 2587.3 ms
+Epoch 19/20  loss 1.3289  test accuracy 0.4942  train time 2583.9 ms
+Epoch 20/20  loss 1.3170  test accuracy 0.4979  train time 2583.7 ms
+
+CIFAR-10, block size = 32, loop unroll disabled
+Epoch 1/20  loss 1.9265  test accuracy 0.3776  train time 7328.3 ms
+Epoch 2/20  loss 1.7505  test accuracy 0.4113  train time 7297.2 ms
+Epoch 3/20  loss 1.6759  test accuracy 0.4257  train time 7326.9 ms
+Epoch 4/20  loss 1.6257  test accuracy 0.4325  train time 7300.0 ms
+Epoch 5/20  loss 1.5869  test accuracy 0.4384  train time 7337.5 ms
+Epoch 6/20  loss 1.5550  test accuracy 0.4402  train time 7303.3 ms
+Epoch 7/20  loss 1.5271  test accuracy 0.4490  train time 7325.5 ms
+Epoch 8/20  loss 1.5024  test accuracy 0.4558  train time 7304.0 ms
+Epoch 9/20  loss 1.4805  test accuracy 0.4615  train time 7341.9 ms
+Epoch 10/20  loss 1.4603  test accuracy 0.4634  train time 7300.7 ms
+Epoch 11/20  loss 1.4414  test accuracy 0.4683  train time 7326.3 ms
+Epoch 12/20  loss 1.4243  test accuracy 0.4728  train time 7300.1 ms
+Epoch 13/20  loss 1.4085  test accuracy 0.4758  train time 7325.9 ms
+Epoch 14/20  loss 1.3937  test accuracy 0.4776  train time 7304.1 ms
+Epoch 15/20  loss 1.3793  test accuracy 0.4834  train time 7327.7 ms
+Epoch 16/20  loss 1.3655  test accuracy 0.4876  train time 7300.6 ms
+Epoch 17/20  loss 1.3528  test accuracy 0.4885  train time 7325.9 ms
+Epoch 18/20  loss 1.3402  test accuracy 0.4922  train time 7300.4 ms
+Epoch 19/20  loss 1.3289  test accuracy 0.4942  train time 7328.0 ms
+Epoch 20/20  loss 1.3170  test accuracy 0.4979  train time 7303.2 ms
