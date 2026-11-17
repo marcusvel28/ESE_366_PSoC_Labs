@@ -1,0 +1,91 @@
+../
+├── FNN_CUDA_MV
+│   ├── Makefile
+│   ├── data
+│   ├── include
+│   │   ├── activation.cuh
+│   │   ├── cuda_utils.cuh
+│   │   ├── dataset.h
+│   │   ├── loss.cuh
+│   │   ├── matrix_operations.cuh
+│   │   └── neural_network.cuh
+│   ├── main.cu
+│   ├── scripts
+│   ├── src
+│   │   ├── activation.cu
+│   │   ├── dataset.c
+│   │   ├── loss.cu
+│   │   ├── matrix_operations.cu
+│   │   └── neural_network.cu
+│   └── struct.txt
+├── hello
+│   ├── hello
+│   └── hello.cu
+├── midterm_MV
+│   ├── bin
+│   │   ├── multiply
+│   │   ├── sum
+│   │   ├── trace
+│   │   └── transpose
+│   ├── eval
+│   │   ├── README.md
+│   │   ├── benchmark_cuda.py
+│   │   ├── benchmark_results.csv
+│   │   ├── multiply_baseline_512.ncu-rep
+│   │   ├── multiply_baseline_512_metrics.csv
+│   │   ├── multiply_optimized_512.ncu-rep
+│   │   ├── multiply_optimized_512_metrics.csv
+│   │   ├── multiply_timings.png
+│   │   ├── plot_cuda.py
+│   │   ├── sum_timings.png
+│   │   ├── test.txt
+│   │   ├── trace_timings.png
+│   │   └── transpose_timings.png
+│   ├── multMatrix.cu
+│   ├── multiply
+│   ├── multiply_ncu_report.txt
+│   ├── optimized
+│   │   ├── bin
+│   │   │   ├── multiply
+│   │   │   ├── sum
+│   │   │   ├── trace
+│   │   │   └── transpose
+│   │   ├── multMatrix.cu
+│   │   ├── multiply
+│   │   ├── sum
+│   │   ├── sumMatrix.cu
+│   │   ├── trace
+│   │   ├── traceMatrix.cu
+│   │   ├── transpose
+│   │   └── transposeMatrix.cu
+│   ├── sum
+│   ├── sumMatrix.cu
+│   ├── trace
+│   ├── traceMatrix.cu
+│   ├── transpose
+│   ├── transposeMatrix.cu
+│   └── tree.txt
+└── profiling
+    ├── ESE_366_Profiling_Report.pdf
+    ├── device_query
+    ├── device_query.cu
+    ├── init
+    │   ├── addvector
+    │   ├── kernel_profile.ncu-rep
+    │   ├── ncu_report.txt
+    │   ├── nsys.txt
+    │   ├── sumArraysOnGPU-small-case.cu
+    │   ├── system_profile.nsys-rep
+    │   └── system_profile.sqlite
+    ├── memory_stride
+    ├── memory_stride.cu
+    ├── ncu_test.txt
+    ├── ncu_test_short.txt
+    ├── nsys_text.txt
+    ├── outputs.txt
+    ├── report1.nsys-rep
+    ├── report1.sqlite
+    ├── vector_add
+    └── vector_add.cu
+
+14 directories, 75 files

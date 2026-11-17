@@ -40,7 +40,7 @@ __global__ void forward(float* w, float* b, float* z)
     
     /* 
     Call relu_activate kernel
-    
+
     int n = nn.batch_size * nn.layer_sizes[i + 1];
 
     int threads = 256;
@@ -55,7 +55,7 @@ __global__ void forward(float* w, float* b, float* z)
 
 __global__ void relu_activate(float* y, float* z, int n)
 {
-    unsigned int idx = blockIdx.x * blockDim.x + threadIdx.x; // 
+    unsigned int idx = blockIdx.x * blockDim.x + threadIdx.x; // matrix element calculation
 
     if (idx < n) // RELU function check
     {
