@@ -13,6 +13,7 @@ struct Neural_Network
     int* layer_sizes;
     int batch_size;
     float learning_rate;
+    int block_size;
 
     float** weights;
     float** bias;
@@ -20,6 +21,11 @@ struct Neural_Network
     float** deltas;
     float** weight_gradient;
     float** bias_gradient;
+
+    // Reusable GPU buffers for backpropagation
+    float* probabilities;
+    float* transposed_weights;
+    float* transposed_outputs;
 };
 
 // Neural Network initialization and cleanup

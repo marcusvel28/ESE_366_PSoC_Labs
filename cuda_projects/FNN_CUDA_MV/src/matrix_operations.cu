@@ -22,36 +22,39 @@ __global__ void MatrixMultiplication_Baseline(
     }
 }
 
-
 // Matrix multiplication: C[M,N] = A[M,K] * B[K,N]
 // Optimized: 16x16 shared-memory tiling and loop unrolling
+
+template<int TILE>
 __global__ void MatrixMultiplication_Optimized(
     const float* A, const float* B, float* C,
     int M, int N, int K)
 {
-    __shared__ float tileA[BLOCK_SIZE][BLOCK_SIZE];
-    __shared__ float tileB[BLOCK_SIZE][BLOCK_SIZE];
+    __shared__ float tileA[TILE][TILE];
+    __shared__ float tileB[TILE][TILE];
 
     int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
 
     float sum = 0.0f;
 
-    for (int t = 0; t < (K + BLOCK_SIZE - 1) / BLOCK_SIZE; t++)
+    for (int t = 0; t < (K + TILE - 1) / TILE; t++)
     {
-        int colA = t * BLOCK_SIZE + threadIdx.x;
-        int rowB = t * BLOCK_SIZE + threadIdx.y;
+        int colA = t * TILE + threadIdx.x;
+        int rowB = t * TILE + threadIdx.y;
 
         tileA[threadIdx.y][threadIdx.x] =
-            (y < M && colA < K) ? A[y * K + colA] : 0.0f;
+            (y < M && colA < K)
+                ? A[y * K + colA] : 0.0f;
 
         tileB[threadIdx.y][threadIdx.x] =
-            (rowB < K && x < N) ? B[rowB * N + x] : 0.0f;
+            (rowB < K && x < N)
+                ? B[rowB * N + x] : 0.0f;
 
         __syncthreads();
 
-        // Manual unrolling (factor of 4)
-        for (int k = 0; k < BLOCK_SIZE; k += 4)
+        // Manually unrolled dot product (factor of 4)
+        for (int k = 0; k < TILE; k += 4)
         {
             sum += tileA[threadIdx.y][k]     * tileB[k][threadIdx.x];
             sum += tileA[threadIdx.y][k + 1] * tileB[k + 1][threadIdx.x];
@@ -67,6 +70,48 @@ __global__ void MatrixMultiplication_Optimized(
         C[y * N + x] = sum;
     }
 }
+
+
+void LaunchMatrixMultiplication(
+    const float* A, const float* B, float* C,
+    int M, int N, int K,
+    CUDA_Mode mode, int block_size)
+{
+    dim3 block(block_size, block_size);
+
+    dim3 grid(
+        (N + block_size - 1) / block_size,
+        (M + block_size - 1) / block_size
+    );
+
+    if (mode == CUDA_BASELINE)
+    {
+        MatrixMultiplication_Baseline<<<grid, block>>>(
+            A, B, C, M, N, K
+        );
+    }
+    else
+    {
+        switch (block_size)
+        {
+            case 8:
+                MatrixMultiplication_Optimized<8>
+                    <<<grid, block>>>(A, B, C, M, N, K);
+                break;
+
+            case 16:
+                MatrixMultiplication_Optimized<16>
+                    <<<grid, block>>>(A, B, C, M, N, K);
+                break;
+
+            case 32:
+                MatrixMultiplication_Optimized<32>
+                    <<<grid, block>>>(A, B, C, M, N, K);
+                break;
+        }
+    }
+}
+
 
 
 // Matrix transpose: B = A^T

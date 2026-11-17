@@ -1,10 +1,16 @@
+
 NVCC = nvcc
 TARGET = fnn
 
-SRC = main.cu $(wildcard src/*.cu)
-OBJ = $(SRC:.cu=.o)
+CUDA_SRC = main.cu $(wildcard src/*.cu)
+CPP_SRC = $(wildcard src/*.cpp)
+
+OBJ = $(CUDA_SRC:.cu=.o) $(CPP_SRC:.cpp=.o)
 
 NVCCFLAGS = -O2 -std=c++17 -Iinclude
+
+MODE ?= optimized
+BLOCK ?= 16
 
 all: $(TARGET)
 
@@ -14,8 +20,11 @@ $(TARGET): $(OBJ)
 %.o: %.cu
 	$(NVCC) $(NVCCFLAGS) -c $< -o $@
 
+%.o: %.cpp
+	$(NVCC) $(NVCCFLAGS) -c $< -o $@
+
 run: $(TARGET)
-	./$(TARGET)
+	./$(TARGET) $(MODE) $(BLOCK)
 
 clean:
 	rm -f $(OBJ) $(TARGET)

@@ -58,78 +58,6 @@ void Network(Neural_Network* nn)
 
         delete[] h_weights;
     }
-}
-
-// Forward propagation through all layers
-
-void forward_propagation(Neural_Network* nn, CUDA_Mode mode)
-{
-    for (int i = 0; i < nn->num_layers - 1; i++)
-    {
-        // Matrix dimensions
-        int M = nn->batch_size;
-        int N = nn->layer_sizes[i + 1];
-        int K = nn->layer_sizes[i];
-
-        // 2D CUDA grid for matrix operations
-        dim3 block(BLOCK_SIZE, BLOCK_SIZE);
-        dim3 grid((N + BLOCK_SIZE - 1) / BLOCK_SIZE,
-                  (M + BLOCK_SIZE - 1) / BLOCK_SIZE);
-
-        // Z = A * W
-        if (mode == CUDA_OPTIMIZED)
-        {
-            MatrixMultiplication_Optimized<<<grid, block>>>(
-                nn->outputs[i],
-                nn->weights[i],
-                nn->outputs[i + 1],
-                M, N, K
-            );
-        }
-        else
-        {
-            MatrixMultiplication_Baseline<<<grid, block>>>(
-                nn->outputs[i],
-                nn->weights[i],
-                nn->outputs[i + 1],
-                M, N, K
-            );
-        }
-
-        // Z = Z + b
-        AddBias<<<grid, block>>>(
-            nn->outputs[i + 1],
-            nn->bias[i],
-            M, N
-        );
-
-        // Apply ReLU to hidden layers only
-        if (i < nn->num_layers - 2)
-        {
-            int n = M * N;
-
-            int threads = 256;
-            int blocks = (n + threads - 1) / threads;
-
-            relu<<<blocks, threads>>>(
-                nn->outputs[i + 1],
-                nn->outputs[i + 1],
-                n
-            );
-        }
-    }
-}
-
-
-void backward_propagation(
-    Neural_Network* nn, const float* targets,
-    CUDA_Mode mode)
-{
-    int L = nn->num_layers - 1;
-    int B = nn->batch_size;
-    int output_size = nn->layer_sizes[L];
-
-    int threads = 256;
 
     // Find maximum temporary buffer sizes
     int max_weights = 0;
@@ -147,25 +75,95 @@ void backward_propagation(
             max_activation = B * K;
     }
 
-    // Temporary GPU buffers
-    float* probabilities = nullptr;
-    float* transposed_weights = nullptr;
-    float* transposed_outputs = nullptr;
+    // Allocate reusable backpropagation buffers
+    int output_size = nn->layer_sizes[L];
 
     CUDA_CHECK(cudaMalloc(
-        &probabilities, B * output_size * sizeof(float)));
+        &nn->probabilities,
+        B * output_size * sizeof(float)
+    ));
 
     CUDA_CHECK(cudaMalloc(
-        &transposed_weights, max_weights * sizeof(float)));
+        &nn->transposed_weights,
+        max_weights * sizeof(float)
+    ));
 
     CUDA_CHECK(cudaMalloc(
-        &transposed_outputs, max_activation * sizeof(float)));
+        &nn->transposed_outputs,
+        max_activation * sizeof(float)
+    ));
+
+}
+
+// Forward propagation through all layers
+void forward_propagation(Neural_Network* nn, CUDA_Mode mode)
+{
+    int block_size = nn->block_size;
+
+    for (int i = 0; i < nn->num_layers - 1; i++)
+    {
+        int M = nn->batch_size;
+        int N = nn->layer_sizes[i + 1];
+        int K = nn->layer_sizes[i];
+
+        dim3 block(block_size, block_size);
+        dim3 grid(
+            (N + block_size - 1) / block_size,
+            (M + block_size - 1) / block_size
+        );
+
+        // Z = A * W
+        LaunchMatrixMultiplication(
+            nn->outputs[i],
+            nn->weights[i],
+            nn->outputs[i + 1],
+            M, N, K,
+            mode, block_size
+        );
+
+        // Z = Z + b
+        AddBias<<<grid, block>>>(
+            nn->outputs[i + 1],
+            nn->bias[i],
+            M, N
+        );
+
+        // ReLU for hidden layers
+        if (i < nn->num_layers - 2)
+        {
+            int n = M * N;
+            int threads = 256;
+            int blocks = (n + threads - 1) / threads;
+
+            relu<<<blocks, threads>>>(
+                nn->outputs[i + 1],
+                nn->outputs[i + 1],
+                n
+            );
+        }
+    }
+
+    CUDA_CHECK(cudaGetLastError());
+}
+
+void backward_propagation(
+    Neural_Network* nn, const float* targets,
+    CUDA_Mode mode)
+{
+    int block_size = nn->block_size;
+    int L = nn->num_layers - 1;
+    int B = nn->batch_size;
+    int output_size = nn->layer_sizes[L];
+
+    int threads = 256;
 
     // Compute softmax probabilities
     int blocks = (B + threads - 1) / threads;
 
     softmax<<<blocks, threads>>>(
-        nn->outputs[L], probabilities, B, output_size
+        nn->outputs[L],
+        nn->probabilities,
+        B, output_size
     );
 
     // Output layer delta
@@ -173,8 +171,10 @@ void backward_propagation(
     blocks = (n + threads - 1) / threads;
 
     output_delta<<<blocks, threads>>>(
-        probabilities, targets,
-        nn->deltas[L - 1], n
+        nn->probabilities,
+        targets,
+        nn->deltas[L - 1],
+        n
     );
 
     // Calculate gradients from output to input
@@ -183,7 +183,7 @@ void backward_propagation(
         int K = nn->layer_sizes[i];
         int N = nn->layer_sizes[i + 1];
 
-        dim3 block(BLOCK_SIZE, BLOCK_SIZE);
+        dim3 block(block_size, block_size);
 
         // Calculate hidden layer delta
         if (i < L - 1)
@@ -192,40 +192,23 @@ void backward_propagation(
 
             // Transpose next layer weights
             dim3 gridT(
-                (nextN + BLOCK_SIZE - 1) / BLOCK_SIZE,
-                (N + BLOCK_SIZE - 1) / BLOCK_SIZE
+                (nextN + block_size - 1) / block_size,
+                (N + block_size - 1) / block_size
             );
 
             MatrixTranspose<<<gridT, block>>>(
                 nn->weights[i + 1],
-                transposed_weights,
+                nn->transposed_weights,
                 N, nextN
             );
 
-            // delta[i] = delta[i+1] * W[i+1]^T
-            dim3 gridM(
-                (N + BLOCK_SIZE - 1) / BLOCK_SIZE,
-                (B + BLOCK_SIZE - 1) / BLOCK_SIZE
+            LaunchMatrixMultiplication(
+                nn->deltas[i + 1],
+                nn->transposed_weights,
+                nn->deltas[i],
+                B, N, nextN,
+                mode, block_size
             );
-
-            if (mode == CUDA_OPTIMIZED)
-            {
-                MatrixMultiplication_Optimized<<<gridM, block>>>(
-                    nn->deltas[i + 1],
-                    transposed_weights,
-                    nn->deltas[i],
-                    B, N, nextN
-                );
-            }
-            else
-            {
-                MatrixMultiplication_Baseline<<<gridM, block>>>(
-                    nn->deltas[i + 1],
-                    transposed_weights,
-                    nn->deltas[i],
-                    B, N, nextN
-                );
-            }
 
             // Apply ReLU derivative
             int count = B * N;
@@ -240,40 +223,23 @@ void backward_propagation(
 
         // Transpose activations: A^T
         dim3 gridT(
-            (K + BLOCK_SIZE - 1) / BLOCK_SIZE,
-            (B + BLOCK_SIZE - 1) / BLOCK_SIZE
+            (K + block_size - 1) / block_size,
+            (B + block_size - 1) / block_size
         );
 
         MatrixTranspose<<<gridT, block>>>(
             nn->outputs[i],
-            transposed_outputs,
+            nn->transposed_outputs,
             B, K
         );
 
-        // Weight gradient = A^T * delta
-        dim3 gridW(
-            (N + BLOCK_SIZE - 1) / BLOCK_SIZE,
-            (K + BLOCK_SIZE - 1) / BLOCK_SIZE
+        LaunchMatrixMultiplication(
+            nn->transposed_outputs,
+            nn->deltas[i],
+            nn->weight_gradient[i],
+            K, N, B,
+            mode, block_size
         );
-
-        if (mode == CUDA_OPTIMIZED)
-        {
-            MatrixMultiplication_Optimized<<<gridW, block>>>(
-                transposed_outputs,
-                nn->deltas[i],
-                nn->weight_gradient[i],
-                K, N, B
-            );
-        }
-        else
-        {
-            MatrixMultiplication_Baseline<<<gridW, block>>>(
-                transposed_outputs,
-                nn->deltas[i],
-                nn->weight_gradient[i],
-                K, N, B
-            );
-        }
 
         // Bias gradient
         blocks = (N + threads - 1) / threads;
@@ -315,12 +281,8 @@ void backward_propagation(
     }
 
     CUDA_CHECK(cudaGetLastError());
-
-    // Release temporary buffers
-    CUDA_CHECK(cudaFree(probabilities));
-    CUDA_CHECK(cudaFree(transposed_weights));
-    CUDA_CHECK(cudaFree(transposed_outputs));
 }
+
 
 
 void FreeNetwork(Neural_Network* nn)
@@ -340,6 +302,16 @@ void FreeNetwork(Neural_Network* nn)
         CUDA_CHECK(cudaFree(nn->weight_gradient[i]));
         CUDA_CHECK(cudaFree(nn->bias_gradient[i]));
     }
+
+    // Free reusable backpropagation buffers
+    CUDA_CHECK(cudaFree(nn->probabilities));
+    CUDA_CHECK(cudaFree(nn->transposed_weights));
+    CUDA_CHECK(cudaFree(nn->transposed_outputs));
+
+    // Reset temporary buffer pointers
+    nn->probabilities = nullptr;
+    nn->transposed_weights = nullptr;
+    nn->transposed_outputs = nullptr;
 
     // Free host pointer arrays
     delete[] nn->weights;

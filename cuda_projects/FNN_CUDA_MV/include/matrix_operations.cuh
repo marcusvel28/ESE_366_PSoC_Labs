@@ -3,27 +3,31 @@
 
 #include <cuda_runtime.h>
 
-#define BLOCK_SIZE 16
-
-// Matrix multiplication mode
+// Available CUDA modes
 enum CUDA_Mode
 {
     CUDA_BASELINE,
     CUDA_OPTIMIZED
 };
 
-// C = A * B
-// Baseline: direct global-memory access
+// Baseline matrix multiplication
 __global__ void MatrixMultiplication_Baseline(
     const float* A, const float* B, float* C,
     int M, int N, int K
 );
 
-// C = A * B
-// Optimized: shared-memory tiling and manual loop unrolling
+// Optimized matrix multiplication
+template<int TILE>
 __global__ void MatrixMultiplication_Optimized(
     const float* A, const float* B, float* C,
     int M, int N, int K
+);
+
+// Matrix multiplication launcher
+void LaunchMatrixMultiplication(
+    const float* A, const float* B, float* C,
+    int M, int N, int K,
+    CUDA_Mode mode, int block_size
 );
 
 // B = A^T
