@@ -8,6 +8,7 @@
 #include <vector>
 #include <algorithm>
 #include <numeric>
+#include <chrono>
 
 #include "neural_network.cuh"
 #include "cuda_utils.cuh"
@@ -18,6 +19,7 @@
 #define LEARNING_RATE 0.01f
 #define NUM_CLASSES 10
 #define SEED 42
+#define WARMUP_RUNS 10
 
 namespace fs = std::filesystem;
 
@@ -47,7 +49,6 @@ void LoadBatch(
         );
 
         int label = dataset->labels[index];
-
         targets[i * NUM_CLASSES + label] = 1.0f;
     }
 
@@ -67,7 +68,7 @@ void LoadBatch(
 }
 
 
-// Compute classification prediction from logits
+// Predict class from output logits
 int PredictClass(const float* logits, int classes)
 {
     int prediction = 0;
@@ -75,16 +76,14 @@ int PredictClass(const float* logits, int classes)
     for (int j = 1; j < classes; j++)
     {
         if (logits[j] > logits[prediction])
-        {
             prediction = j;
-        }
     }
 
     return prediction;
 }
 
 
-// Compute cross-entropy directly from logits
+// Stable cross-entropy from logits
 float CrossEntropyFromLogits(
     const float* logits,
     int label,
@@ -108,7 +107,7 @@ float CrossEntropyFromLogits(
 }
 
 
-// Evaluate loss and accuracy on a dataset subset
+// Evaluate average loss and classification accuracy
 void Evaluate(
     Neural_Network* nn,
     const Dataset* dataset,
@@ -138,11 +137,8 @@ void Evaluate(
         int current = std::min(B, count - start);
 
         LoadBatch(
-            nn,
-            dataset,
-            indices + start,
-            current,
-            d_targets
+            nn, dataset, indices + start,
+            current, d_targets
         );
 
         forward_propagation(nn, mode);
@@ -161,20 +157,18 @@ void Evaluate(
             const float* row =
                 logits.data() + i * NUM_CLASSES;
 
-            int label = dataset->labels[indices[start + i]];
+            int label =
+                dataset->labels[indices[start + i]];
 
-            int prediction = PredictClass(
-                row, NUM_CLASSES
-            );
+            int prediction =
+                PredictClass(row, NUM_CLASSES);
 
             total_loss += CrossEntropyFromLogits(
                 row, label, NUM_CLASSES
             );
 
             if (prediction == label)
-            {
                 correct++;
-            }
         }
     }
 
@@ -185,24 +179,22 @@ void Evaluate(
 }
 
 
-// Save predictions for the entire MNIST test dataset
+// Save predictions for all MNIST test images
 void SavePredictions(
     Neural_Network* nn,
     const Dataset* test,
     CUDA_Mode mode,
     const std::string& output_dir)
 {
-    std::string predictions_path =
+    std::string path =
         output_dir + "/predictions.csv";
 
-    FILE* csv = fopen(predictions_path.c_str(), "w");
+    FILE* csv = fopen(path.c_str(), "w");
 
     if (!csv)
     {
-        fprintf(stderr,
-                "Failed to create %s\n",
-                predictions_path.c_str());
-
+        fprintf(stderr, "Failed to create %s\n",
+                path.c_str());
         exit(EXIT_FAILURE);
     }
 
@@ -212,12 +204,7 @@ void SavePredictions(
     int L = nn->num_layers - 1;
 
     std::vector<int> indices(test->count);
-
-    std::iota(
-        indices.begin(),
-        indices.end(),
-        0
-    );
+    std::iota(indices.begin(), indices.end(), 0);
 
     std::vector<float> logits(B * NUM_CLASSES);
 
@@ -230,7 +217,6 @@ void SavePredictions(
 
     int correct = 0;
 
-    // Generate predictions for all test images
     for (int start = 0; start < test->count; start += B)
     {
         int current = std::min(
@@ -238,11 +224,9 @@ void SavePredictions(
         );
 
         LoadBatch(
-            nn,
-            test,
+            nn, test,
             indices.data() + start,
-            current,
-            d_targets
+            current, d_targets
         );
 
         forward_propagation(nn, mode);
@@ -262,25 +246,16 @@ void SavePredictions(
                 logits.data() + i * NUM_CLASSES;
 
             int index = indices[start + i];
-
             int prediction = PredictClass(
                 row, NUM_CLASSES
             );
-
             int label = test->labels[index];
 
-            fprintf(
-                csv,
-                "%d,%d,%d\n",
-                index,
-                label,
-                prediction
-            );
+            fprintf(csv, "%d,%d,%d\n",
+                    index, label, prediction);
 
             if (prediction == label)
-            {
                 correct++;
-            }
         }
     }
 
@@ -288,52 +263,39 @@ void SavePredictions(
 
     CUDA_CHECK(cudaFree(d_targets));
 
-    printf(
-        "Saved %d predictions to %s\n",
-        test->count,
-        predictions_path.c_str()
-    );
+    printf("Saved %d predictions to %s\n",
+           test->count, path.c_str());
 
-    printf(
-        "Prediction Accuracy: %.2f%%\n",
-        100.0f * correct / test->count
-    );
+    printf("Prediction Accuracy: %.2f%%\n",
+           100.0f * correct / test->count);
 }
 
 
-// Save first 100 test images as a 10x10 PGM contact sheet
+// Save the first 100 MNIST images as a PGM sheet
 void SaveDigitSheet(
     const Dataset* test,
     const std::string& output_dir)
 {
-    std::string digits_path =
+    std::string path =
         output_dir + "/test_digits.pgm";
 
-    FILE* pgm = fopen(digits_path.c_str(), "wb");
+    FILE* pgm = fopen(path.c_str(), "wb");
 
     if (!pgm)
     {
-        fprintf(stderr,
-                "Failed to create %s\n",
-                digits_path.c_str());
-
+        fprintf(stderr, "Failed to create %s\n",
+                path.c_str());
         exit(EXIT_FAILURE);
     }
 
     const int grid_cols = 10;
     const int grid_rows = 10;
 
-    const int examples = std::min(
-        100, test->count
-    );
+    int examples = std::min(100, test->count);
+    int pixels = test->rows * test->cols;
 
-    const int pixels = test->rows * test->cols;
-
-    const int sheet_width =
-        grid_cols * test->cols;
-
-    const int sheet_height =
-        grid_rows * test->rows;
+    int sheet_width = grid_cols * test->cols;
+    int sheet_height = grid_rows * test->rows;
 
     std::vector<unsigned char> sheet(
         sheet_width * sheet_height, 0
@@ -349,8 +311,7 @@ void SaveDigitSheet(
             for (int x = 0; x < test->cols; x++)
             {
                 int src =
-                    i * pixels +
-                    y * test->cols + x;
+                    i * pixels + y * test->cols + x;
 
                 int dst =
                     (grid_y * test->rows + y) * sheet_width +
@@ -359,33 +320,55 @@ void SaveDigitSheet(
                 float value =
                     test->images[src] * 255.0f;
 
-                sheet[dst] = static_cast<unsigned char>(
-                    std::lround(value)
-                );
+                sheet[dst] =
+                    static_cast<unsigned char>(
+                        std::lround(value)
+                    );
             }
         }
     }
 
-    fprintf(
-        pgm,
-        "P5\n%d %d\n255\n",
-        sheet_width,
-        sheet_height
-    );
+    fprintf(pgm, "P5\n%d %d\n255\n",
+            sheet_width, sheet_height);
 
-    fwrite(
-        sheet.data(),
-        1,
-        sheet.size(),
-        pgm
-    );
-
+    fwrite(sheet.data(), 1, sheet.size(), pgm);
     fclose(pgm);
 
-    printf(
-        "Saved digit sheet to %s\n",
-        digits_path.c_str()
+    printf("Saved digit sheet to %s\n",
+           path.c_str());
+}
+
+
+// Warm up CUDA before timing actual training
+void WarmupGPU(
+    Neural_Network* nn,
+    const Dataset* dataset,
+    const int* indices,
+    CUDA_Mode mode,
+    float* d_targets)
+{
+    printf("Warming up GPU (%d runs)...\n",
+           WARMUP_RUNS);
+
+    // Upload one full batch
+    LoadBatch(
+        nn,
+        dataset,
+        indices,
+        nn->batch_size,
+        d_targets
     );
+
+    // Warm up forward propagation without updating weights
+    for (int i = 0; i < WARMUP_RUNS; i++)
+    {
+        forward_propagation(nn, mode);
+    }
+
+    CUDA_CHECK(cudaGetLastError());
+    CUDA_CHECK(cudaDeviceSynchronize());
+
+    printf("GPU warm-up complete.\n\n");
 }
 
 
@@ -395,8 +378,7 @@ int main(int argc, char** argv)
     // Parse CUDA mode and block size
     if (argc != 3)
     {
-        fprintf(
-            stderr,
+        fprintf(stderr,
             "Usage: ./fnn <baseline|optimized> <block_size>\n"
             "Supported block sizes: 8, 16, 32\n"
         );
@@ -407,13 +389,9 @@ int main(int argc, char** argv)
     CUDA_Mode mode;
 
     if (strcmp(argv[1], "baseline") == 0)
-    {
         mode = CUDA_BASELINE;
-    }
     else if (strcmp(argv[1], "optimized") == 0)
-    {
         mode = CUDA_OPTIMIZED;
-    }
     else
     {
         fprintf(stderr, "Invalid CUDA mode\n");
@@ -421,22 +399,15 @@ int main(int argc, char** argv)
     }
 
     char* end = nullptr;
+    long requested = strtol(argv[2], &end, 10);
 
-    long requested = strtol(
-        argv[2], &end, 10
-    );
-
-    if (*argv[2] == '\0' ||
-        *end != '\0' ||
+    if (*argv[2] == '\0' || *end != '\0' ||
         (requested != 8 &&
          requested != 16 &&
          requested != 32))
     {
-        fprintf(
-            stderr,
-            "Block size must be 8, 16, or 32\n"
-        );
-
+        fprintf(stderr,
+            "Block size must be 8, 16, or 32\n");
         return EXIT_FAILURE;
     }
 
@@ -445,7 +416,7 @@ int main(int argc, char** argv)
     const char* mode_name =
         mode == CUDA_OPTIMIZED ? "optimized" : "baseline";
 
-    // Create experiment-specific output directory
+    // Experiment-specific output directory
     std::string output_dir =
         "outputs/" + std::string(mode_name) +
         "/block_" + std::to_string(block_size);
@@ -453,11 +424,12 @@ int main(int argc, char** argv)
     fs::create_directories(output_dir);
 
     printf("CUDA Mode: %s\n", mode_name);
-    printf("Block Size: %d x %d\n", block_size, block_size);
-    printf("CUDA FNN - %s\n", mode_name);
-    printf("Output Directory: %s\n\n", output_dir.c_str());
+    printf("Block Size: %d x %d\n",
+           block_size, block_size);
+    printf("Output Directory: %s\n\n",
+           output_dir.c_str());
 
-    // Load MNIST datasets
+    // Load MNIST
     Dataset train{};
     Dataset test{};
 
@@ -478,7 +450,6 @@ int main(int argc, char** argv)
         return EXIT_FAILURE;
     }
 
-    // Validate MNIST image dimensions
     if (train.rows * train.cols != 784 ||
         test.rows * test.cols != 784)
     {
@@ -490,18 +461,15 @@ int main(int argc, char** argv)
         return EXIT_FAILURE;
     }
 
-    // Split training dataset into training and validation
+    // Split into training and validation sets
     int* indices = nullptr;
     int train_count = 0;
 
     if (dataset_split_indices(
-        train.count,
-        0.8f,
-        SEED,
-        &indices,
-        &train_count) != 0)
+        train.count, 0.8f, SEED,
+        &indices, &train_count) != 0)
     {
-        fprintf(stderr, "Failed to split dataset\n");
+        fprintf(stderr, "Dataset split failed\n");
 
         dataset_free(&train);
         dataset_free(&test);
@@ -509,8 +477,7 @@ int main(int argc, char** argv)
         return EXIT_FAILURE;
     }
 
-    int val_count =
-        train.count - train_count;
+    int val_count = train.count - train_count;
 
     printf("Training Samples:   %d\n", train_count);
     printf("Validation Samples: %d\n", val_count);
@@ -537,7 +504,13 @@ int main(int argc, char** argv)
         BATCH_SIZE * NUM_CLASSES * sizeof(float)
     ));
 
-    // Create training metrics file
+    // Warm-up before starting training measurements
+    WarmupGPU(
+        &nn, &train,
+        indices, mode, d_targets
+    );
+
+    // Create metrics file
     std::string metrics_path =
         output_dir + "/metrics.csv";
 
@@ -548,35 +521,47 @@ int main(int argc, char** argv)
     if (!metrics)
     {
         fprintf(stderr, "Failed to create metrics.csv\n");
-
         CUDA_CHECK(cudaFree(d_targets));
         FreeNetwork(&nn);
-
         free(indices);
         dataset_free(&train);
         dataset_free(&test);
-
         return EXIT_FAILURE;
     }
 
     fprintf(
         metrics,
-        "epoch,train_loss,val_loss,train_accuracy,val_accuracy\n"
+        "epoch,train_loss,val_loss,train_accuracy,val_accuracy,"
+        "gpu_training_ms,epoch_ms\n"
     );
 
-    // Initialize shuffle state
+    // Create CUDA timing events
+    cudaEvent_t start_event, stop_event;
+
+    CUDA_CHECK(cudaEventCreate(&start_event));
+    CUDA_CHECK(cudaEventCreate(&stop_event));
+
     unsigned rng_state = SEED;
+
+    double total_training_ms = 0.0;
+    double total_gpu_timeline_ms = 0.0;
 
     // Training loop
     for (int epoch = 1; epoch <= EPOCHS; epoch++)
     {
+        // Shuffle training indices
         dataset_shuffle_indices(
-            indices,
-            train_count,
-            &rng_state
+            indices, train_count, &rng_state
         );
 
-        // Mini-batch SGD training
+        // Begin wall-clock timing
+        auto cpu_start =
+            std::chrono::steady_clock::now();
+
+        // Begin GPU timeline measurement
+        CUDA_CHECK(cudaEventRecord(start_event));
+
+        // Mini-batch SGD
         for (int start = 0;
              start + BATCH_SIZE <= train_count;
              start += BATCH_SIZE)
@@ -589,82 +574,112 @@ int main(int argc, char** argv)
                 d_targets
             );
 
-            forward_propagation(
-                &nn, mode
-            );
+            forward_propagation(&nn, mode);
 
             backward_propagation(
                 &nn, d_targets, mode
             );
         }
 
-        CUDA_CHECK(cudaGetLastError());
-        CUDA_CHECK(cudaDeviceSynchronize());
+        // Stop GPU timeline measurement
+        CUDA_CHECK(cudaEventRecord(stop_event));
 
-        // Evaluate training and validation performance
+        // Synchronize ONCE per epoch
+        CUDA_CHECK(cudaEventSynchronize(stop_event));
+
+        float gpu_training_ms = 0.0f;
+
+        CUDA_CHECK(cudaEventElapsedTime(
+            &gpu_training_ms,
+            start_event,
+            stop_event
+        ));
+
+        // Stop wall-clock measurement
+        auto cpu_stop =
+            std::chrono::steady_clock::now();
+
+        double epoch_ms =
+            std::chrono::duration<double, std::milli>(
+                cpu_stop - cpu_start
+            ).count();
+
+        total_training_ms += epoch_ms;
+        total_gpu_timeline_ms += gpu_training_ms;
+
+        // Evaluate model after training
         float train_loss = 0.0f;
         float train_accuracy = 0.0f;
-
         float val_loss = 0.0f;
         float val_accuracy = 0.0f;
 
         Evaluate(
-            &nn,
-            &train,
-            indices,
-            train_count,
+            &nn, &train,
+            indices, train_count,
             mode,
-            &train_loss,
-            &train_accuracy
+            &train_loss, &train_accuracy
         );
 
         Evaluate(
-            &nn,
-            &train,
-            indices + train_count,
-            val_count,
+            &nn, &train,
+            indices + train_count, val_count,
             mode,
-            &val_loss,
-            &val_accuracy
+            &val_loss, &val_accuracy
         );
 
-        // Display epoch metrics
+        // Print training results
         printf(
             "Epoch %2d/%d | "
             "Train Loss: %.4f | Train Acc: %.2f%% | "
-            "Val Loss: %.4f | Val Acc: %.2f%%\n",
+            "Val Loss: %.4f | Val Acc: %.2f%% | "
+            "Train: %.2f ms | GPU Timeline: %.2f ms\n",
             epoch,
             EPOCHS,
             train_loss,
             train_accuracy * 100.0f,
             val_loss,
-            val_accuracy * 100.0f
+            val_accuracy * 100.0f,
+            epoch_ms,
+            gpu_training_ms
         );
 
         // Save epoch metrics
         fprintf(
             metrics,
-            "%d,%.6f,%.6f,%.6f,%.6f\n",
+            "%d,%.6f,%.6f,%.6f,%.6f,%.4f,%.4f\n",
             epoch,
             train_loss,
             val_loss,
             train_accuracy,
-            val_accuracy
+            val_accuracy,
+            gpu_training_ms,
+            epoch_ms
         );
 
         fflush(metrics);
     }
 
+    // Destroy CUDA timing events
+    CUDA_CHECK(cudaEventDestroy(start_event));
+    CUDA_CHECK(cudaEventDestroy(stop_event));
+
     fclose(metrics);
 
-    // Evaluate final model on held-out test dataset
-    std::vector<int> test_indices(test.count);
+    // Print aggregate training performance
+    printf("\n=== Training Performance ===\n");
 
-    std::iota(
-        test_indices.begin(),
-        test_indices.end(),
-        0
-    );
+    printf("Total Training Time: %.3f seconds\n",
+           total_training_ms / 1000.0);
+
+    printf("Average Epoch Time: %.3f seconds\n",
+           total_training_ms / EPOCHS / 1000.0);
+
+    printf("Total GPU Timeline: %.3f seconds\n",
+           total_gpu_timeline_ms / 1000.0);
+
+    // Final test evaluation
+    std::vector<int> test_indices(test.count);
+    std::iota(test_indices.begin(), test_indices.end(), 0);
 
     float test_loss = 0.0f;
     float test_accuracy = 0.0f;
@@ -683,32 +698,21 @@ int main(int argc, char** argv)
     printf("Test Accuracy: %.2f%%\n",
            test_accuracy * 100.0f);
 
-    // Save all test-set predictions
-    SavePredictions(
-        &nn,
-        &test,
-        mode,
-        output_dir
-    );
-
-    // Save first 100 test digits for visualization
-    SaveDigitSheet(
-        &test,
-        output_dir
-    );
+    // Save predictions and digit sheet
+    SavePredictions(&nn, &test, mode, output_dir);
+    SaveDigitSheet(&test, output_dir);
 
     // Cleanup
     CUDA_CHECK(cudaFree(d_targets));
-
     FreeNetwork(&nn);
 
     free(indices);
-
     dataset_free(&train);
     dataset_free(&test);
 
     printf("\nTraining complete.\n");
-    printf("Results saved to: %s\n", output_dir.c_str());
+    printf("Results saved to: %s\n",
+           output_dir.c_str());
 
     return EXIT_SUCCESS;
 }

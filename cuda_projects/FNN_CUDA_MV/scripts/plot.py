@@ -215,6 +215,14 @@ def crop_digit(image, index):
 def plot_classifications(image):
     data = load_csv(PREDICTIONS)
 
+    # Only use predictions corresponding to images
+    # available in the 10x10 contact sheet
+    data = [
+        row for row in data
+        if int(row["index"]) < 100
+    ]
+
+
     if not data:
         raise RuntimeError("No prediction records found.")
 
